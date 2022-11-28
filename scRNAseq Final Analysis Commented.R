@@ -1,3 +1,6 @@
+install.packages("msigdbr")
+BiocManager::install("fgsea")
+
 library(scCATCH)
 library(Seurat)
 library(CytoTRACE)
@@ -23,6 +26,8 @@ library(monocle3)
 library(Matrix)
 library(ggplot2)
 library(patchwork)
+library(msigdbr)
+library(fgsea)
 ####################################################################################################################
 #create merged object
 wt_control_data <- Read10X(data.dir = "JG186_control/outs/filtered_feature_bc_matrix/")
@@ -119,7 +124,7 @@ cell_markers %>%
   top_n(n = 20, wt = avg_log2FC) -> top20_cell_markers
 write.csv(top20_cell_markers,"top20_genes.csv")
 
-#Figure 5D###########################################################################################################
+#Figure 4F###########################################################################################################
 Idents(seurat_obj) <- seurat_obj$orig.ident
 seurat_obj$orig.ident <- factor(x = seurat_obj$orig.ident, levels = c('wt_wt-control', 'wt_wt-tcl1a_overexpression',
                                                                       'alt_alt-control', 'alt_alt-tcl1a_overexpression'))
@@ -134,7 +139,7 @@ ClusterPlot <- DimPlot(seurat_obj, label.size = 4) + NoLegend() + NoAxes()
 ClusterPlotBold <- LabelClusters(ClusterPlot, id = "ident",  fontface = "bold")
 SplitPlot + ClusterPlotBold
 
-#Extended Figure 15C###########################################################################################################
+#Extended Figure 19C###########################################################################################################
 seurat_obj_subset <- subset(x = seurat_obj, idents = c('HSC/MPP 1', 'HSC/MPP 2', 'HSC/MPP 3', 'HSC/MPP 4', 
                                                        'CMP', 'GMP', 'Macrophage','Neutrophil', 'Eosinophil',
                                                        'Mast Cell'))
@@ -154,7 +159,7 @@ CellCycleByCluster <- ggplot(data_long, aes(fill=Phase, y=Percent, x=CellType)) 
   xlab("Cell Cluster")
 CellCycleByCluster
 
-#Extended Figure 16A###########################################################################################################
+#Extended Figure 21A###########################################################################################################
 celltype_table <- data.frame(unclass(table(Idents(seurat_obj_subset), seurat_obj_subset@meta.data$orig.ident)))
 celltype_table_percentage <- apply(celltype_table, 2, function(x){x*100/sum(x,na.rm=T)})
 celltype_tibble <- celltype_table_percentage %>% as_tibble()
@@ -179,7 +184,7 @@ CellTypesByCondition <- ggplot(celltype_data_long, aes(fill=CellType, y=Percent,
   xlab("Genotype and Lentivirus") + scale_fill_discrete(name = "Cell Clusters")
 CellTypesByCondition
 
-#Figure 5F###########################################################################################################
+#Figure 4H###########################################################################################################
 HSC_MPP <- subset(x = seurat_obj, idents = c("HSC/MPP 1", "HSC/MPP 2", "HSC/MPP 3", "HSC/MPP 4"))
 table(HSC_MPP@meta.data$orig.ident, HSC_MPP@meta.data$new.id)
 RR_prop_test <- sc_utils(HSC_MPP)
@@ -215,14 +220,14 @@ combo_permutation_plot <- ggplot(combo_prop_plot, aes(x = clusters, y = obs_log2
   coord_flip()
 combo_permutation_plot
 
-#Extended Figure 15A###########################################################################################################
+#Extended Figure 19A###########################################################################################################
 DefaultAssay(seurat_obj_subset) <- "ADT"
 ADT_plots <- FeaturePlot(seurat_obj_subset, features = c("CD34-TotalSeqB","CD38-TotalSeqB","CD45RA-TotalSeqB",
                                                          "CD49f-TotalSeqB","CD11a-TotalSeqB","CD117-TotalSeqB"),
                          ncol=2,cols = c("yellow", "blue"),order=T, min.cutoff = 'q5', max.cutoff = 'q95')
 ADT_plots
 
-#Extended Figure 15D###########################################################################################################
+#Extended Figure 19D###########################################################################################################
 DefaultAssay(seurat_obj_subset) <- "SCT"
 stress_UMAP_plots <- FeaturePlot(seurat_obj_subset, 
                                  features = c("GADD45B","GDF15","DDIT3","ATF4","TXNIP","BBC3","CDKN1A",
@@ -230,7 +235,7 @@ stress_UMAP_plots <- FeaturePlot(seurat_obj_subset,
                                  ncol=2,cols = c("yellow", "blue"),order=T)
 stress_UMAP_plots
 
-#Figure 5E###########################################################################################################
+#Figure 4G###########################################################################################################
 DefaultAssay(seurat_obj_subset) <- "SCT"
 Feature_Dot_Plot <- DotPlot(seurat_obj_subset, features = c("BAD","TXNIP","BBC3","GADD45B","CCNG2","CDKN1B","CDKN1A","BCL2L11","SOD2",
                                                             "NFE2L2","GDF15","ATF4","DDIT3","PPP1R15A",
@@ -244,7 +249,7 @@ Feature_Dot_Plot <- DotPlot(seurat_obj_subset, features = c("BAD","TXNIP","BBC3"
   cowplot::theme_cowplot() + RotatedAxis()
 Feature_Dot_Plot
 
-#Extended Figure 16B###########################################################################################################
+#Extended Figure 21B###########################################################################################################
 complete_celltype <- data.frame(unclass(table(Idents(seurat_obj), seurat_obj@meta.data$orig.ident)))
 complete_celltype_table_percentage <- as.data.frame(apply(complete_celltype, 2, function(x){x/sum(x,na.rm=T)}))
 complete_celltype_table_percentage$WWC_counts <- complete_celltype_table_percentage$wt_wt.control*5443
@@ -269,7 +274,7 @@ hsc_cell_counts_plot <- hsc_cell_counts_long %>%
   xlab("Genotype and Lentivirus") + scale_fill_discrete(name = "Cell Clusters")
 hsc_cell_counts_plot
 
-#Extended Figure 15B###########################################################################################################
+#Extended Figure 19B###########################################################################################################
 set.seed(1234)
 HSC_MPP_CMP <- subset(x = seurat_obj, idents = c("HSC/MPP 1", "HSC/MPP 2", "HSC/MPP 3", "HSC/MPP 4", "CMP"))
 hsc_mpp.cds <- as.cell_data_set(HSC_MPP_CMP)
@@ -288,5 +293,22 @@ HSC_MPP_GMP_Dimplot <- DimPlot(HSC_MPP_CMP) + NoAxes()
 LineageUMAP <- FeaturePlot(HSC_MPP_CMP, c("Lineage"), pt.size = 0.1) & scale_color_viridis_c()
 HSC_MPP_GMP_Dimplot + LineageUMAP
 
+#Supplemental Table15###########################################################################################################
+hsc <- subset(x = seurat_obj, idents = c("HSC/MPP 1", "HSC/MPP 2", "HSC/MPP 3", "HSC/MPP 4"))
+Idents(object = hsc) <- "edit"
+tcl1.markers <- FindMarkers(hsc, ident.1 = "control", ident.2 = "tcl1a_overexpression",test.use="LR", latent.vars = 'snp',min.pct = 0.05, logfc.threshold = 0.1)
+tcl1.markers.Tidy <- tcl1.markers %>%
+  as_tibble() %>%
+  arrange((-avg_log2FC)) %>%
+  print(n=60)
+ranks <- tcl1.markers$avg_log2FC
+names(ranks) <- rownames(tcl1.markers)
+m_df<- msigdbr(species = "Homo sapiens", category = "C2", subcategory = "REACTOME")
+fgsea_sets<- m_df %>% split(x = .$gene_symbol, f = .$gs_name)
+set.seed(5)
+fgseaRes<- fgsea(fgsea_sets, stats = ranks, nperm = 1000, scoreType = "std", nproc=1, minSize=5)
+fgseaRes$leadingEdge <- vapply(fgseaRes$leadingEdge, paste, collapse = ", ", character(1L))
+fgseaRes.sig <- fgseaRes[fgseaRes$padj<0.1,]
+write.table(fgseaRes.sig, sep="\t", row.names=FALSE,"hsc_reactome_tcl1a_control.txt")
 
 
