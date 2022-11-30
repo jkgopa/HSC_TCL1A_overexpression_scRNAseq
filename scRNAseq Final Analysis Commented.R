@@ -293,7 +293,7 @@ HSC_MPP_GMP_Dimplot <- DimPlot(HSC_MPP_CMP) + NoAxes()
 LineageUMAP <- FeaturePlot(HSC_MPP_CMP, c("Lineage"), pt.size = 0.1) & scale_color_viridis_c()
 HSC_MPP_GMP_Dimplot + LineageUMAP
 
-#Supplemental Table15###########################################################################################################
+#Supplemental Table18###########################################################################################################
 hsc <- subset(x = seurat_obj, idents = c("HSC/MPP 1", "HSC/MPP 2", "HSC/MPP 3", "HSC/MPP 4"))
 Idents(object = hsc) <- "edit"
 tcl1.markers <- FindMarkers(hsc, ident.1 = "control", ident.2 = "tcl1a_overexpression",test.use="LR", latent.vars = 'snp',min.pct = 0.05, logfc.threshold = 0.1)
